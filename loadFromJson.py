@@ -1,0 +1,3 @@
+# loadFromJson.py
+
+import json
