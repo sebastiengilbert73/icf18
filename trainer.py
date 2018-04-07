@@ -5,6 +5,7 @@ import ast
 import os
 
 import loadFromJson
+import accuracy
 
 print('trainer.py')
 
@@ -63,9 +64,14 @@ if args.cuda:
     validationLabelsTensor = validationLabelsTensor.cuda()
 
 # Validation loss
-validationOutput = sigmoidFcn( neuralNet(torch.autograd.Variable(validationImgsTensor) ))
-validationLoss = lossFunction(validationOutput, torch.autograd.Variable(validationLabelsTensor))
-print("Epoch 0: Average train loss = ?; validationLoss = {}".format(validationLoss.data[0]))
+validationImgsTensor = torch.autograd.Variable(validationImgsTensor)
+validationLabelsTensor = torch.autograd.Variable(validationLabelsTensor)
+validationOutput = sigmoidFcn( neuralNet(validationImgsTensor ))
+validationLoss = lossFunction(validationOutput, validationLabelsTensor)
+escapeRate, overkillRate = accuracy.EscapeAndOverkillRates(validationOutput, validationLabelsTensor)
+print("Epoch 0: Average train loss = ?; validationLoss = {}; ecapeRate = {}; overkillRate = {}".format(validationLoss.data[0],
+                                                                                                       escapeRate,
+                                                                                                       overkillRate))
 
 for epoch in range(1, args.numberOfEpochs + 1):
     averageTrainLoss = 0
@@ -111,10 +117,11 @@ for epoch in range(1, args.numberOfEpochs + 1):
         validationImgsTensor = validationImgsTensor.cuda()
         validationLabelsTensor = validationLabelsTensor.cuda()
     # Validation loss
-    validationOutput = sigmoidFcn( neuralNet(torch.autograd.Variable(validationImgsTensor) ))
-    validationLoss = lossFunction(validationOutput, torch.autograd.Variable(validationLabelsTensor))
-    #print ("validationLoss =", validationLoss)
+    validationImgsTensor = torch.autograd.Variable(validationImgsTensor)
+    validationLabelsTensor = torch.autograd.Variable(validationLabelsTensor)
+    validationOutput = sigmoidFcn( neuralNet( validationImgsTensor ))
+    validationLoss = lossFunction(validationOutput, validationLabelsTensor)
+    escapeRate, overkillRate = accuracy.EscapeAndOverkillRates(validationOutput, validationLabelsTensor)
 
-    print("\nEpoch {}: Average train loss = {}; validationLoss = {}".format(epoch, averageTrainLoss,
-                                                                                         validationLoss.data[0])),
-                                                                                         #accuracy))
+    print("\nEpoch {}: Average train loss = {}; validationLoss = {}; escapeRate = {}; overkillRate = {}".format(
+        epoch, averageTrainLoss, validationLoss.data[0], escapeRate, overkillRate))
