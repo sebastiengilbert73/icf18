@@ -58,6 +58,10 @@ minibatchIndicesListList = trainImporter.MinibatchIndices(args.minibatchSize)
 # Initial validation loss before training
 validationIndicesList = validationImporter.MinibatchIndices(args.numberOfImagesForValidation)[0] # Keep the first list
 validationImgsTensor, validationLabelsTensor = validationImporter.Minibatch(validationIndicesList, imageSize)
+if args.cuda:
+    validationImgsTensor = validationImgsTensor.cuda()
+    validationLabelsTensor = validationLabelsTensor.cuda()
+
 # Validation loss
 validationOutput = sigmoidFcn( neuralNet(torch.autograd.Variable(validationImgsTensor) ))
 validationLoss = lossFunction(validationOutput, torch.autograd.Variable(validationLabelsTensor))
@@ -103,6 +107,9 @@ for epoch in range(1, args.numberOfEpochs + 1):
     # Validation
     validationIndicesList = validationImporter.MinibatchIndices(args.numberOfImagesForValidation)[0] # Keep the first list
     validationImgsTensor, validationLabelsTensor = validationImporter.Minibatch(validationIndicesList, imageSize)
+    if args.cuda:
+        validationImgsTensor = validationImgsTensor.cuda()
+        validationLabelsTensor = validationLabelsTensor.cuda()
     # Validation loss
     validationOutput = sigmoidFcn( neuralNet(torch.autograd.Variable(validationImgsTensor) ))
     validationLoss = lossFunction(validationOutput, torch.autograd.Variable(validationLabelsTensor))
