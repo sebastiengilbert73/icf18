@@ -4,7 +4,7 @@ import loadFromJson
 
 print ("loadFromJsonTester.py")
 importer = loadFromJson.Importer('/home/sebastien/MachineLearning/BenchmarkDatasets/imaterialist-challenge-fashion-2018/train.json')
-dataJson = importer.jsonObj
+#dataJson = importer.jsonObj
 
 #print ('dataJson =', dataJson)
 #print ("dataJson['annotations'] =", dataJson['annotations'])

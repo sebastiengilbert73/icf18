@@ -9,15 +9,18 @@ import io
 import numpy
 
 class Importer:
-    def __init__(self, filepath, maximumNumberOfTrainingImages):
+    def __init__(self, filepath, maximumNumberOfTrainingImages, numberOfAttributes=0):
         with open(filepath, 'r') as openFile:
             fileAsString = openFile.read()
-        self.jsonObj = json.loads(fileAsString)
+        jsonObj = json.loads(fileAsString)
         self.imageIds = []
+        self.imageIdToUrl = {}
+        self.imageIdToLabels = {}
+
 
         # Create a dictionary of image_id to url
-        self.imageIdToUrl = {}
-        imageIdUrlList = self.jsonObj["images"]
+
+        imageIdUrlList = jsonObj["images"]
         for imageIdUrlDic in imageIdUrlList:
             #print ("loadFromJson.Importer.__init__(): imageIdUrlDic =", imageIdUrlDic)
             image_id = int (imageIdUrlDic["imageId"])
@@ -26,9 +29,12 @@ class Importer:
             self.imageIdToUrl[image_id] = url
 
         # Create a dictionary of image_id to labels list
-        self.imageIdToLabels = {}
         self.labels = set() # Set of existing labels
-        imageIdLabelsList = self.jsonObj["annotations"]
+        if numberOfAttributes > 0:
+            for number in range(1, numberOfAttributes + 1):
+                self.labels.add(number)
+
+        imageIdLabelsList = jsonObj["annotations"]
         for imageIdLabelIdsDic in imageIdLabelsList:
             image_id = int( imageIdLabelIdsDic["imageId"])
             labelsStrList = imageIdLabelIdsDic["labelId"]
