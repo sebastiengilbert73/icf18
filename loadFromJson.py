@@ -6,9 +6,10 @@ import torchvision
 import PIL
 import requests
 import io
+import numpy
 
 class Importer:
-    def __init__(self, filepath):
+    def __init__(self, filepath, maximumNumberOfTrainingImages):
         with open(filepath, 'r') as openFile:
             fileAsString = openFile.read()
         self.jsonObj = json.loads(fileAsString)
@@ -35,16 +36,25 @@ class Importer:
             self.imageIdToLabels[image_id] = labelsList
             self.labels.update(labelsList)
 
+        if maximumNumberOfTrainingImages > 0 and maximumNumberOfTrainingImages < len(self.imageIds):
+            for imageIdNdx in range(maximumNumberOfTrainingImages, len(self.imageIds)):
+                imageIdToRemove = self.imageIds[imageIdNdx]
+                del self.imageIdToUrl[imageIdToRemove]
+                del self.imageIdToLabels[imageIdToRemove]
+            self.imageIds = self.imageIds[0: maximumNumberOfTrainingImages]
+
+
 
     def Minibatch(self, minibatchIndicesList, imageSize): # imageSize = (width, height)
         imagesTensor = torch.FloatTensor(len(minibatchIndicesList), 3, imageSize[1], imageSize[0]).zero_() # N x C x H x W
-        targetLabelsTensor = torch.FloatTensor(len(minibatchIndicesList), len(self.labels)).zero_()
+        targetLabelsTensor = torch.LongTensor(len(minibatchIndicesList), len(self.labels)).zero_()
         preprocessing = torchvision.transforms.Compose([
             torchvision.transforms.Resize((imageSize[1], imageSize[0])), # Resize expects (h, w)
             torchvision.transforms.ToTensor(),
             torchvision.transforms.Normalize( (0.5, 0.5, 0.5), (0.2, 0.2, 0.2))
         ] )
 
+        minibatchIndex0 = 0
         for index in minibatchIndicesList:
             if index < 0 or index >= len(self.imageIdToUrl):
                 raise IndexError("loadFromJson.Importer.Minibatch(): Index {} is out of range [0, {}]".format(index, len(self.imageIdToUrl) - 1))
@@ -57,13 +67,34 @@ class Importer:
             pilImg = PIL.Image.open(io.BytesIO(response.content))
             #pilImg.show()
             imgTensor = preprocessing(pilImg)
-            imagesTensor[index] = imgTensor
+            imagesTensor[minibatchIndex0] = imgTensor
 
-            labelsTensor = torch.FloatTensor(len (self.labels) ).zero_()
+            labelsTensor = torch.LongTensor(len (self.labels) ).zero_()
             for label in labels:
                 labelNdx = label - 1 # labels are 1-based
-                labelsTensor[labelNdx] = 1.0
-            targetLabelsTensor[index] = labelsTensor
+                labelsTensor[labelNdx] = 1
+            targetLabelsTensor[minibatchIndex0] = labelsTensor
+            minibatchIndex0 += 1
 
         return imagesTensor, targetLabelsTensor
 
+    def MinibatchIndices(self, minibatchSize):
+        numberOfSamples = len(self.imageIdToUrl)
+        shuffledList = numpy.arange(numberOfSamples)
+        numpy.random.shuffle(shuffledList)
+        minibatchesIndicesList = []
+        numberOfWholeLists = int(numberOfSamples / minibatchSize)
+        for wholeListNdx in range(numberOfWholeLists):
+            minibatchIndices = shuffledList[wholeListNdx * minibatchSize: (wholeListNdx + 1) * minibatchSize]
+            minibatchesIndicesList.append(minibatchIndices)
+        # Add the last incomplete minibatch
+        if numberOfWholeLists * minibatchSize < numberOfSamples:
+            lastMinibatchIndices = shuffledList[numberOfWholeLists * minibatchSize:]
+            minibatchesIndicesList.append(lastMinibatchIndices)
+        return minibatchesIndicesList
+
+    def NumberOfSamples(self):
+        return len(self.imageIdToUrl)
+
+    def NumberOfAttributes(self):
+        return len(self.labels)
