@@ -2,6 +2,10 @@
 
 import json
 import torch
+import torchvision
+import PIL
+import requests
+import io
 
 class Importer:
     def __init__(self, filepath):
@@ -32,8 +36,34 @@ class Importer:
             self.labels.update(labelsList)
 
 
-    def Minibatch(self, minibatchIndicesList, imageSize):
-        imagesTensor = torch.FloatTensor(len(minibatchIndicesList), 3, imageSize[1], imageSize[0])
-        targetLabelsTensor = torch.FloatTensor(len(minibatchIndicesList), len(self.labels))
+    def Minibatch(self, minibatchIndicesList, imageSize): # imageSize = (width, height)
+        imagesTensor = torch.FloatTensor(len(minibatchIndicesList), 3, imageSize[1], imageSize[0]).zero_() # N x C x H x W
+        targetLabelsTensor = torch.FloatTensor(len(minibatchIndicesList), len(self.labels)).zero_()
+        preprocessing = torchvision.transforms.Compose([
+            torchvision.transforms.Resize((imageSize[1], imageSize[0])), # Resize expects (h, w)
+            torchvision.transforms.ToTensor(),
+            torchvision.transforms.Normalize( (0.5, 0.5, 0.5), (0.2, 0.2, 0.2))
+        ] )
+
+        for index in minibatchIndicesList:
+            if index < 0 or index >= len(self.imageIdToUrl):
+                raise IndexError("loadFromJson.Importer.Minibatch(): Index {} is out of range [0, {}]".format(index, len(self.imageIdToUrl) - 1))
+            image_id = index + 1 # image_id is 1-based
+            url = self.imageIdToUrl[image_id]
+            labels = self.imageIdToLabels[image_id]
+            #print ("loadFromJson.Importer.Minibatch(): index {}: url = {} ; labels = {}".format(index, url, labels))
+            response = requests.get(url)
+            #print ("loadFromJson.Importer.Minibatch(): response =", response)
+            pilImg = PIL.Image.open(io.BytesIO(response.content))
+            #pilImg.show()
+            imgTensor = preprocessing(pilImg)
+            imagesTensor[index] = imgTensor
+
+            labelsTensor = torch.FloatTensor(len (self.labels) ).zero_()
+            for label in labels:
+                labelNdx = label - 1 # labels are 1-based
+                labelsTensor[labelNdx] = 1.0
+            targetLabelsTensor[index] = labelsTensor
 
         return imagesTensor, targetLabelsTensor
+

@@ -10,8 +10,11 @@ dataJson = importer.jsonObj
 #print ("dataJson['annotations'] =", dataJson['annotations'])
 print("importer.imageIdToUrl[1] =", importer.imageIdToUrl[1])
 print ("importer.imageIdToLabels[1] =", importer.imageIdToLabels[1])
-print ("importer.labels =", importer.labels)
+print("importer.imageIdToUrl[1] =", importer.imageIdToUrl[2])
+print ("importer.imageIdToLabels[1] =", importer.imageIdToLabels[2])
+#print ("importer.labels =", importer.labels)
 
-minibatchIndicesList = [0]
+minibatchIndicesList = [0, 1]
 imagesTensor, targetLabelsTensor = importer.Minibatch(minibatchIndicesList, (256, 256))
-print (imagesTensor)
+#print (imagesTensor)
+print (targetLabelsTensor)
