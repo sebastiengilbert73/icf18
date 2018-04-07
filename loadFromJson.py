@@ -67,19 +67,24 @@ class Importer:
             image_id = index + 1 # image_id is 1-based
             url = self.imageIdToUrl[image_id]
             labels = self.imageIdToLabels[image_id]
+            urlResponded = True
             #print ("loadFromJson.Importer.Minibatch(): index {}: url = {} ; labels = {}".format(index, url, labels))
-            response = requests.get(url)
-            #print ("loadFromJson.Importer.Minibatch(): response =", response)
-            pilImg = PIL.Image.open(io.BytesIO(response.content))
-            #pilImg.show()
-            imgTensor = preprocessing(pilImg)
-            imagesTensor[minibatchIndex0] = imgTensor
+            try:
+                response = requests.get(url)
+            except:
+                urlResponded = False
 
-            labelsTensor = torch.LongTensor(len (self.labels) ).zero_()
-            for label in labels:
-                labelNdx = label - 1 # labels are 1-based
-                labelsTensor[labelNdx] = 1
-            targetLabelsTensor[minibatchIndex0] = labelsTensor
+            if urlResponded:
+                pilImg = PIL.Image.open(io.BytesIO(response.content))
+                #pilImg.show()
+                imgTensor = preprocessing(pilImg)
+                imagesTensor[minibatchIndex0] = imgTensor
+
+                labelsTensor = torch.LongTensor(len (self.labels) ).zero_()
+                for label in labels:
+                    labelNdx = label - 1 # labels are 1-based
+                    labelsTensor[labelNdx] = 1
+                targetLabelsTensor[minibatchIndex0] = labelsTensor
             minibatchIndex0 += 1
 
         return imagesTensor, targetLabelsTensor
