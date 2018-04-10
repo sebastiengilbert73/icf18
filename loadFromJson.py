@@ -109,3 +109,14 @@ class Importer:
 
     def NumberOfAttributes(self):
         return len(self.labels)
+
+    def AttributesFrequencies(self):
+        numberOfAttributes = self.NumberOfAttributes()
+        attributesOccurrences = [0] * numberOfAttributes
+        for imageId in self.imageIdToLabels:
+            labels = self.imageIdToLabels[imageId]
+            for labelNdx in range(len(labels)):
+                label = labels[labelNdx] - 1 # Labels are 1-based
+                attributesOccurrences[label] = attributesOccurrences[label] + 1
+        numberOfSamples = self.NumberOfSamples()
+        return [x/numberOfSamples for x in attributesOccurrences]
