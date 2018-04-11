@@ -32,6 +32,14 @@ imageSize = ast.literal_eval(args.imageSize)
 trainImporter = loadFromJson.Importer(os.path.join(args.baseDirectory, 'train.json'), args.maximumNumberOfTrainingImages)
 validationImporter = loadFromJson.Importer(os.path.join(args.baseDirectory, 'validation.json'), 0,
                                            numberOfAttributes=trainImporter.NumberOfAttributes())
+# Create a weights vector for false negatives
+attributesFrequencies = trainImporter.AttributesFrequencies()
+penaltiesForFalseNegativesVector = torch.FloatTensor(len(attributesFrequencies))
+for frequencyNdx in range(len(attributesFrequencies)):
+    if attributesFrequencies[frequencyNdx] <= 1e-6:
+        penaltiesForFalseNegativesVector[frequencyNdx] = 1000000
+    else:
+        penaltiesForFalseNegativesVector[frequencyNdx] = 1.0/attributesFrequencies[frequencyNdx]
 
 
 # Create a neural network, an optimizer and a loss function
@@ -59,7 +67,7 @@ lossRequiresFloatForLabelsTensor = False
 if args.lossFunction == 'MultiLabelMarginLoss':
     lossFunction = torch.nn.MultiLabelMarginLoss()
 elif args.lossFunction == 'AsymmetricL1Loss':
-    lossFunction = asymmetricLoss.AsymmetricL1Loss(100.0)
+    lossFunction = asymmetricLoss.AsymmetricL1Loss(penaltiesForFalseNegativesVector)
     lossRequiresFloatForLabelsTensor = True
 else:
     raise NotImplementedError("trainer.py Loss funtion '{}' is not implemented".format(args.lossFunction))
