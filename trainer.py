@@ -154,3 +154,5 @@ for epoch in range(1, args.numberOfEpochs + 1):
 
     print("\nEpoch {}: Average train loss = {}; validationLoss = {}; escapeRate = {}; overkillRate = {}".format(
         epoch, averageTrainLoss, validationLoss.data[0], escapeRate, overkillRate))
+
+    torch.save(neuralNet.state_dict(), os.path.join('./', args.architecture + '_esc' + str(escapeRate) + '_overkill' + str(overkillRate)))
