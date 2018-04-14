@@ -26,9 +26,16 @@ testImporter = loadFromJson.Importer(os.path.join(args.baseDirectory, 'test.json
 # Create a neural network, an optimizer and a loss function
 if args.architecture == 'resnet18':
     imageSize = (224, 224)
+    expansion = 1
     neuralNet = torchvision.models.resnet18(pretrained=True)
     # Replace the last fully-connected layer
-    neuralNet.fc =  torch.nn.Linear(512, testImporter.NumberOfAttributes())  # Add a sigmoid final transformation
+    neuralNet.fc =  torch.nn.Linear(512 * expansion, testImporter.NumberOfAttributes()) 
+elif args.architecture == 'resnet152':
+    imageSize = (224, 224)
+    expansion = 4
+    neuralNet = torchvision.models.resnet18(pretrained=True)
+    # Replace the last fully-connected layer
+    neuralNet.fc = torch.nn.Linear(512 * expansion, testImporter.NumberOfAttributes())
 else:
     raise NotImplementedError("tester.py Architecture '{}' is not implemented".format(args.architecture))
 
