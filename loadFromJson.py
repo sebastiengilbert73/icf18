@@ -9,7 +9,7 @@ import io
 import numpy
 
 class Importer:
-    def __init__(self, filepath, maximumNumberOfTrainingImages, numberOfAttributes=0):
+    def __init__(self, filepath, maximumNumberOfTrainingImages, numberOfAttributes=0, testDataset=False):
         with open(filepath, 'r') as openFile:
             fileAsString = openFile.read()
         jsonObj = json.loads(fileAsString)
@@ -34,13 +34,14 @@ class Importer:
             for number in range(1, numberOfAttributes + 1):
                 self.labels.add(number)
 
-        imageIdLabelsList = jsonObj["annotations"]
-        for imageIdLabelIdsDic in imageIdLabelsList:
-            image_id = int( imageIdLabelIdsDic["imageId"])
-            labelsStrList = imageIdLabelIdsDic["labelId"]
-            labelsList = [ int(labelStr) for labelStr in labelsStrList]
-            self.imageIdToLabels[image_id] = labelsList
-            self.labels.update(labelsList)
+        if not testDataset:
+            imageIdLabelsList = jsonObj["annotations"]
+            for imageIdLabelIdsDic in imageIdLabelsList:
+                image_id = int( imageIdLabelIdsDic["imageId"])
+                labelsStrList = imageIdLabelIdsDic["labelId"]
+                labelsList = [ int(labelStr) for labelStr in labelsStrList]
+                self.imageIdToLabels[image_id] = labelsList
+                self.labels.update(labelsList)
 
         if maximumNumberOfTrainingImages > 0 and maximumNumberOfTrainingImages < len(self.imageIds):
             for imageIdNdx in range(maximumNumberOfTrainingImages, len(self.imageIds)):
@@ -66,7 +67,10 @@ class Importer:
                 raise IndexError("loadFromJson.Importer.Minibatch(): Index {} is out of range [0, {}]".format(index, len(self.imageIdToUrl) - 1))
             image_id = index + 1 # image_id is 1-based
             url = self.imageIdToUrl[image_id]
-            labels = self.imageIdToLabels[image_id]
+            if image_id in self.imageIdToLabels:
+                labels = self.imageIdToLabels[image_id]
+            else:
+                labels = []
             urlResponded = True
             #print ("loadFromJson.Importer.Minibatch(): index {}: url = {} ; labels = {}".format(index, url, labels))
             try:
