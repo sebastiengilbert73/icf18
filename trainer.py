@@ -41,6 +41,7 @@ for frequencyNdx in range(len(attributesFrequencies)):
     else:
         penaltiesForFalseNegativesVector[frequencyNdx] = 1.0/attributesFrequencies[frequencyNdx]
 
+numberOfAttributes = trainImporter.NumberOfAttributes()
 
 # Create a neural network, an optimizer and a loss function
 if args.architecture == 'resnet18':
@@ -55,7 +56,8 @@ if args.architecture == 'resnet18':
 
     # Create an optimizer
     optimizer = torch.optim.SGD(neuralNet.fc.parameters(), lr=args.learningRate, momentum=args.momentum)
-if args.architecture == 'resnet152':
+
+elif args.architecture == 'resnet152':
     imageSize = (224, 224)
     expansion = 4
     neuralNet = torchvision.models.resnet152(pretrained=True)
@@ -68,6 +70,25 @@ if args.architecture == 'resnet152':
     # Create an optimizer
     optimizer = torch.optim.SGD(neuralNet.fc.parameters(), lr=args.learningRate, momentum=args.momentum)
 
+elif args.architecture == 'alexnet':
+    imageSize = (224, 224)
+    neuralNet = torchvision.models.alexnet(pretrained=True)
+    for param in neuralNet.parameters():
+        param.requires_grad = False
+    # Replace the last fully-connected layer
+    # Parameters of newly constructed modules have requires_grad=True by default
+    neuralNet.classifier = torch.nn.Sequential(
+        torch.nn.Dropout(),
+        torch.nn.Linear(256 * 6 * 6, 4096),
+        torch.nn.ReLU(inplace=True),
+        torch.nn.Dropout(),
+        torch.nn.Linear(4096, 4096),
+        torch.nn.ReLU(inplace=True),
+        torch.nn.Linear(4096, numberOfAttributes),
+    ) # Add a sigmoid final transformation
+
+    # Create an optimizer
+    optimizer = torch.optim.SGD(neuralNet.classifier.parameters(), lr=args.learningRate, momentum=args.momentum)
 else:
     raise NotImplementedError("trainer.py Architecture '{}' is not implemented".format(args.architecture))
 
@@ -82,6 +103,9 @@ if args.lossFunction == 'MultiLabelMarginLoss':
     lossFunction = torch.nn.MultiLabelMarginLoss()
 elif args.lossFunction == 'AsymmetricL1Loss':
     lossFunction = asymmetricLoss.AsymmetricL1Loss(penaltiesForFalseNegativesVector)
+    lossRequiresFloatForLabelsTensor = True
+elif args.lossFunction == 'AsymmetricL2Loss':
+    lossFunction = asymmetricLoss.AsymmetricL2Loss(penaltiesForFalseNegativesVector)
     lossRequiresFloatForLabelsTensor = True
 else:
     raise NotImplementedError("trainer.py Loss funtion '{}' is not implemented".format(args.lossFunction))
@@ -107,7 +131,7 @@ validationOutput = sigmoidFcn( neuralNet(validationImgsTensor ))
 validationLoss = lossFunction(validationOutput, validationLabelsTensor)
 escapeRate, overkillRate = accuracy.EscapeAndOverkillRates(validationOutput, validationLabelsTensor)
 
-print("Epoch 0: Average train loss = ?; validationLoss = {}; ecapeRate = {}; overkillRate = {}".format(validationLoss.data[0],
+print("Epoch 0: Average train loss = ?; validationLoss = {}; escapeRate = {}; overkillRate = {}".format(validationLoss.data[0],
                                                                                                        escapeRate,
                                                                                                        overkillRate))
 
