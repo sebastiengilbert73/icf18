@@ -39,7 +39,7 @@ else:
     neuralNet.load_state_dict(torch.load(args.neuralNetworkFilename, map_location=lambda storage, location: storage))
 
 sigmoidFcn = torch.nn.Sigmoid()
-submissionFile = open("submission" + '.csv', 'w')
+submissionFile = open("submission_" + args.neuralNetworkFilename + '.csv', 'w')
 submissionFile.write('image_id,label_id\n')
 
 # Loop through the images

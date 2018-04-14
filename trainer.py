@@ -45,12 +45,25 @@ for frequencyNdx in range(len(attributesFrequencies)):
 # Create a neural network, an optimizer and a loss function
 if args.architecture == 'resnet18':
     imageSize = (224, 224)
+    expansion = 1
     neuralNet = torchvision.models.resnet18(pretrained=True)
     for param in neuralNet.parameters():
         param.requires_grad = False
     # Replace the last fully-connected layer
     # Parameters of newly constructed modules have requires_grad=True by default
-    neuralNet.fc =  torch.nn.Linear(512, trainImporter.NumberOfAttributes())  # Add a sigmoid final transformation
+    neuralNet.fc =  torch.nn.Linear(512 * expansion, trainImporter.NumberOfAttributes())  # Add a sigmoid final transformation
+
+    # Create an optimizer
+    optimizer = torch.optim.SGD(neuralNet.fc.parameters(), lr=args.learningRate, momentum=args.momentum)
+if args.architecture == 'resnet152':
+    imageSize = (224, 224)
+    expansion = 4
+    neuralNet = torchvision.models.resnet152(pretrained=True)
+    for param in neuralNet.parameters():
+        param.requires_grad = False
+    # Replace the last fully-connected layer
+    # Parameters of newly constructed modules have requires_grad=True by default
+    neuralNet.fc =  torch.nn.Linear(512 * expansion, trainImporter.NumberOfAttributes())  # Add a sigmoid final transformation
 
     # Create an optimizer
     optimizer = torch.optim.SGD(neuralNet.fc.parameters(), lr=args.learningRate, momentum=args.momentum)
@@ -60,6 +73,7 @@ else:
 
 if args.cuda:
     neuralNet.cuda() # Move to GPU
+#print ("neuralNet =", neuralNet)
 
 # Create a loss function
 lossRequiresFloatForLabelsTensor = False
