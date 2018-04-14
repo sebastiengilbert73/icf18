@@ -29,13 +29,26 @@ if args.architecture == 'resnet18':
     expansion = 1
     neuralNet = torchvision.models.resnet18(pretrained=True)
     # Replace the last fully-connected layer
-    neuralNet.fc =  torch.nn.Linear(512 * expansion, testImporter.NumberOfAttributes()) 
+    neuralNet.fc =  torch.nn.Linear(512 * expansion, testImporter.NumberOfAttributes())
 elif args.architecture == 'resnet152':
     imageSize = (224, 224)
     expansion = 4
     neuralNet = torchvision.models.resnet18(pretrained=True)
     # Replace the last fully-connected layer
     neuralNet.fc = torch.nn.Linear(512 * expansion, testImporter.NumberOfAttributes())
+elif args.architecture == 'alexnet':
+    imageSize = (224, 224)
+    neuralNet = torchvision.models.alexnet(pretrained=True)
+    # Replace the last fully-connected layer
+    neuralNet.classifier = torch.nn.Sequential(
+        torch.nn.Dropout(),
+        torch.nn.Linear(256 * 6 * 6, 4096),
+        torch.nn.ReLU(inplace=True),
+        torch.nn.Dropout(),
+        torch.nn.Linear(4096, 4096),
+        torch.nn.ReLU(inplace=True),
+        torch.nn.Linear(4096, testImporter.NumberOfAttributes()),
+    )
 else:
     raise NotImplementedError("tester.py Architecture '{}' is not implemented".format(args.architecture))
 
@@ -64,7 +77,7 @@ for imageNdx in range(numberOfImages):
     # List the labels: outputVariable.data.shape = torch.Size([1, 228])
     labelsList = []
     for labelNdx in range(testImporter.NumberOfAttributes()):
-        if outputVariable.data[0, labelNdx] >= 0.5:
+        if outputVariable.data[0, labelNdx] >= 0.0:
             labelsList.append(labelNdx + 1) # labels are 1-based
     print ("labelsList =", labelsList)
     submissionLine = str(imageNdx + 1) + ','
