@@ -33,7 +33,7 @@ if args.architecture == 'resnet18':
 elif args.architecture == 'resnet152':
     imageSize = (224, 224)
     expansion = 4
-    neuralNet = torchvision.models.resnet18(pretrained=True)
+    neuralNet = torchvision.models.resnet152(pretrained=True)
     # Replace the last fully-connected layer
     neuralNet.fc = torch.nn.Linear(512 * expansion, testImporter.NumberOfAttributes())
 elif args.architecture == 'alexnet':
