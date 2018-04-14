@@ -58,7 +58,7 @@ if args.cuda:
 else:
     neuralNet.load_state_dict(torch.load(args.neuralNetworkFilename, map_location=lambda storage, location: storage))
 
-sigmoidFcn = torch.nn.Sigmoid()
+#sigmoidFcn = torch.nn.Sigmoid()
 submissionFile = open("submission_" + args.neuralNetworkFilename + '.csv', 'w')
 submissionFile.write('image_id,label_id\n')
 
@@ -71,13 +71,14 @@ for imageNdx in range(numberOfImages):
     if args.cuda:
         imageTensor = imageTensor.cuda()
     imageVariable = torch.autograd.Variable(imageTensor)
-    outputVariable = sigmoidFcn( neuralNet(imageVariable))
+    #outputVariable = sigmoidFcn( neuralNet(imageVariable))
+    outputVariable = neuralNet(imageVariable)
     #print ("outputVariable =", outputVariable)
 
     # List the labels: outputVariable.data.shape = torch.Size([1, 228])
     labelsList = []
     for labelNdx in range(testImporter.NumberOfAttributes()):
-        if outputVariable.data[0, labelNdx] >= 0.0:
+        if outputVariable.data[0, labelNdx] >= 0.5:
             labelsList.append(labelNdx + 1) # labels are 1-based
     print ("labelsList =", labelsList)
     submissionLine = str(imageNdx + 1) + ','

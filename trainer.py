@@ -110,7 +110,7 @@ elif args.lossFunction == 'AsymmetricL2Loss':
 else:
     raise NotImplementedError("trainer.py Loss funtion '{}' is not implemented".format(args.lossFunction))
 
-sigmoidFcn = torch.nn.Sigmoid()
+#sigmoidFcn = torch.nn.Sigmoid()
 
 minibatchIndicesListList = trainImporter.MinibatchIndices(args.minibatchSize)
 
@@ -127,7 +127,8 @@ if lossRequiresFloatForLabelsTensor:
 # Validation loss
 validationImgsTensor = torch.autograd.Variable(validationImgsTensor)
 validationLabelsTensor = torch.autograd.Variable(validationLabelsTensor)
-validationOutput = sigmoidFcn( neuralNet(validationImgsTensor ))
+#validationOutput = sigmoidFcn( neuralNet(validationImgsTensor ))
+validationOutput = neuralNet(validationImgsTensor )
 validationLoss = lossFunction(validationOutput, validationLabelsTensor)
 escapeRate, overkillRate = accuracy.EscapeAndOverkillRates(validationOutput, validationLabelsTensor)
 
@@ -158,7 +159,8 @@ for epoch in range(1, args.numberOfEpochs + 1):
         optimizer.zero_grad()
 
         # Forward pass
-        actualOutput = sigmoidFcn( neuralNet(minibatchImgsTensor) ) # Add a sigmoid to the output of the neural network (the last layer is linear)
+        #actualOutput = sigmoidFcn( neuralNet(minibatchImgsTensor) ) # Add a sigmoid to the output of the neural network (the last layer is linear)
+        actualOutput = neuralNet(minibatchImgsTensor)
 
         # Loss
         loss = lossFunction(actualOutput, minibatchTargetLabelsTensor)
@@ -186,7 +188,8 @@ for epoch in range(1, args.numberOfEpochs + 1):
     # Validation loss
     validationImgsTensor = torch.autograd.Variable(validationImgsTensor)
     validationLabelsTensor = torch.autograd.Variable(validationLabelsTensor)
-    validationOutput = sigmoidFcn( neuralNet( validationImgsTensor ))
+    #validationOutput = sigmoidFcn( neuralNet( validationImgsTensor ))
+    validationOutput = neuralNet(validationImgsTensor)
     validationLoss = lossFunction(validationOutput, validationLabelsTensor)
     escapeRate, overkillRate = accuracy.EscapeAndOverkillRates(validationOutput, validationLabelsTensor)
 
