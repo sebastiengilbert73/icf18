@@ -37,10 +37,10 @@ attributesFrequencies = trainImporter.AttributesFrequencies()
 penaltiesForFalseNegativesVector = torch.FloatTensor(len(attributesFrequencies))
 for frequencyNdx in range(len(attributesFrequencies)):
     if attributesFrequencies[frequencyNdx] <= 1e-6:
-        penaltiesForFalseNegativesVector[frequencyNdx] = 1000000
+        penaltiesForFalseNegativesVector[frequencyNdx] = (1 - 1e-6)/1e-6
     else:
-        penaltiesForFalseNegativesVector[frequencyNdx] = 1.0/attributesFrequencies[frequencyNdx]
-
+        penaltiesForFalseNegativesVector[frequencyNdx] = (1.0 - attributesFrequencies[frequencyNdx])/attributesFrequencies[frequencyNdx]
+    print ("(LabelID, frequency, penalyty): ({}, {}, {})".format(frequencyNdx + 1, attributesFrequencies[frequencyNdx], penaltiesForFalseNegativesVector[frequencyNdx]))
 numberOfAttributes = trainImporter.NumberOfAttributes()
 
 # Create a neural network, an optimizer and a loss function
