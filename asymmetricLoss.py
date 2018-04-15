@@ -7,14 +7,22 @@ class AsymmetricL1Loss(torch.nn.Module):
 
     def forward (self, computedOutputVariable, targetOutputVariable):
         numberOfSamples = computedOutputVariable.data.shape[0]
+        numberOfAttributes = computedOutputVariable.data.shape[1]
         differenceVariable = computedOutputVariable - targetOutputVariable
-        minusDifferenceVariable = -1.0 * differenceVariable
+        """minusDifferenceVariable = -1.0 * differenceVariable
         expandedPenaltyVariable = torch.autograd.Variable(self.penaltyForFalseNegativeVector.repeat(numberOfSamples, 1))
         if minusDifferenceVariable.is_cuda:
             expandedPenaltyVariable = expandedPenaltyVariable.cuda()
         lossTensorVariable = expandedPenaltyVariable * torch.abs(minusDifferenceVariable) + \
                                                      1.0 * torch.abs(differenceVariable)
         print ("numberOfSamples =", numberOfSamples)
+        """
+        lossTensorVariable = differenceVariable
+        for sampleNdx in range(numberOfSamples):
+            for attributeNdx in range(numberOfAttributes):
+                if differenceVariable.data[sampleNdx, attributeNdx] < 0: # False negative
+                    lossTensorVariable.data[sampleNdx, attributeNdx] = -1.0 * \
+                        self.penaltyForFalseNegativeVector[attributeNdx] * differenceVariable.data[sampleNdx, attributeNdx]
         return (1.0 / numberOfSamples) * torch.sum(lossTensorVariable)
 
 class AsymmetricL2Loss(torch.nn.Module):
