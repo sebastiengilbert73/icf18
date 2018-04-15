@@ -14,7 +14,7 @@ class AsymmetricL1Loss(torch.nn.Module):
             expandedPenaltyVariable = expandedPenaltyVariable.cuda()
         lossTensorVariable = expandedPenaltyVariable * torch.abs(minusDifferenceVariable) + \
                                                      1.0 * torch.abs(differenceVariable)
-
+        print ("numberOfSamples =", numberOfSamples)
         return (1.0 / numberOfSamples) * torch.sum(lossTensorVariable)
 
 class AsymmetricL2Loss(torch.nn.Module):
