@@ -14,6 +14,7 @@ parser = argparse.ArgumentParser()
 parser.add_argument('baseDirectory', help='The directory containing the files train.json and validation.json')
 parser.add_argument('--disable-cuda', action='store_true', help='Disable CUDA')
 parser.add_argument('--architecture', help='The neural network architecture (Default: resnet18)', default='resnet18')
+parser.add_argument('--restartWithNeuralNetwork', help='Restart the training with this neural network filename')
 parser.add_argument('--lossFunction', help='Loss function (Default: MultiLabelMarginLoss)', default='MultiLabelMarginLoss')
 parser.add_argument('--learningRate', help='The learning rate (Default: 0.001)', type=float, default=0.001)
 parser.add_argument('--momentum', help='The learning momentum (Default: 0.9)', type=float, default=0.9)
@@ -22,7 +23,7 @@ parser.add_argument('--numberOfEpochs', help='Number of epochs (Default: 200)', 
 parser.add_argument('--minibatchSize', help='Minibatch size (Default: 64)', type=int, default=64)
 parser.add_argument('--numberOfImagesForValidation', help='The number of images used for validation (Default: 128)', type=int, default=128)
 parser.add_argument('--maximumNumberOfTrainingImages', help='The maximum number of training images (Default: 0, which means no limit)', type=int, default=0)
-
+parser.add_argument('--maximumPenaltyForFalseNegative', help='Maximum penalty for false negative (Default: 1000)', type=float, default=1000.0)
 
 args = parser.parse_args()
 args.cuda = not args.disable_cuda and torch.cuda.is_available()
@@ -36,11 +37,13 @@ validationImporter = loadFromJson.Importer(os.path.join(args.baseDirectory, 'val
 attributesFrequencies = trainImporter.AttributesFrequencies()
 penaltiesForFalseNegativesVector = torch.FloatTensor(len(attributesFrequencies))
 for frequencyNdx in range(len(attributesFrequencies)):
-    if attributesFrequencies[frequencyNdx] <= 1e-6:
-        penaltiesForFalseNegativesVector[frequencyNdx] = (1 - 1e-6)/1e-6
+    if attributesFrequencies[frequencyNdx] <= 1e-3:
+        penaltiesForFalseNegativesVector[frequencyNdx] = (1 - 1e-3)/1e-3
     else:
         penaltiesForFalseNegativesVector[frequencyNdx] = (1.0 - attributesFrequencies[frequencyNdx])/attributesFrequencies[frequencyNdx]
-    print ("(LabelID, frequency, penalyty): ({}, {}, {})".format(frequencyNdx + 1, attributesFrequencies[frequencyNdx], penaltiesForFalseNegativesVector[frequencyNdx]))
+    if penaltiesForFalseNegativesVector[frequencyNdx] > args.maximumPenaltyForFalseNegative:
+        penaltiesForFalseNegativesVector[frequencyNdx] = args.maximumPenaltyForFalseNegative
+    print ("(LabelID, frequency, penalty): ({}, {}, {})".format(frequencyNdx + 1, attributesFrequencies[frequencyNdx], penaltiesForFalseNegativesVector[frequencyNdx]))
 numberOfAttributes = trainImporter.NumberOfAttributes()
 
 # Create a neural network, an optimizer and a loss function
@@ -94,7 +97,13 @@ else:
 
 if args.cuda:
     neuralNet.cuda() # Move to GPU
-#print ("neuralNet =", neuralNet)
+
+if args.restartWithNeuralNetwork is not None:
+    if args.cuda:
+        neuralNet.load_state_dict(torch.load(args.restartWithNeuralNetwork))
+        neuralNet.cuda() # Move to GPU
+    else:
+        neuralNet.load_state_dict(torch.load(args.restartWithNeuralNetwork, map_location=lambda storage, location: storage))
 
 # Create a loss function
 lossRequiresFloatForLabelsTensor = False
@@ -137,6 +146,10 @@ print("Epoch 0: Average train loss = ?; validationLoss = {}; escapeRate = {}; ov
                                                                                                        overkillRate))
 
 for epoch in range(1, args.numberOfEpochs + 1):
+    if epoch % 3 == 0:
+        if args.lossFunction == 'AsymmetricL2Loss':
+            print ("lossFunction.MovePenaltiesTowardOne(0.2)")
+            lossFunction.MovePenaltiesTowardOne(0.2)
     averageTrainLoss = 0
     for minibatchListNdx in range(len(minibatchIndicesListList)):
         #print ("minibatchListNdx = ", minibatchListNdx)
