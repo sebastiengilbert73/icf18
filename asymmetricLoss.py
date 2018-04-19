@@ -44,6 +44,13 @@ class AsymmetricL2Loss(torch.nn.Module):
                 if differenceVariable.data[sampleNdx, attributeNdx] < 0:
                     lossTensorVariable.data[sampleNdx, attributeNdx] = self.penaltyForFalseNegativeVector[attributeNdx] * \
                                                                             lossTensorVariable.data[sampleNdx, attributeNdx]
+                # Check if the computed number is larger than 1.0 for a 1.0 attribute, or less than 0 for a 0 attribute
+                if targetOutputVariable.data[sampleNdx, attributeNdx] >= 1.0:
+                    if computedOutputVariable.data[sampleNdx, attributeNdx] >= 1.0:
+                        lossTensorVariable.data[sampleNdx, attributeNdx] = 0
+                if targetOutputVariable.data[sampleNdx, attributeNdx] <= 0.0:
+                    if computedOutputVariable.data[sampleNdx, attributeNdx] <= 0.0:
+                        lossTensorVariable.data[sampleNdx, attributeNdx] = 0
         return (1.0 / numberOfSamples) * torch.sum(lossTensorVariable)
 
     def MultiplyPenaltiesBy(self, factor):
