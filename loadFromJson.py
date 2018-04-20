@@ -124,3 +124,13 @@ class Importer:
                 attributesOccurrences[label] = attributesOccurrences[label] + 1
         numberOfSamples = self.NumberOfSamples()
         return [x/numberOfSamples for x in attributesOccurrences]
+
+    def AttributesInverseFrequencies(self, maximumValue):
+        attributesFrequencies = self.AttributesFrequencies()
+        attributesInverseFrequencies = [0] * len(attributesFrequencies)
+        for attributeNdx in range(len (attributesInverseFrequencies)):
+            if attributesFrequencies[attributeNdx] < 1.0/maximumValue:
+                attributesInverseFrequencies[attributeNdx] = maximumValue
+            else:
+                attributesInverseFrequencies[attributeNdx] = 1.0 / attributesFrequencies[attributeNdx]
+        return attributesInverseFrequencies

@@ -35,6 +35,8 @@ validationImporter = loadFromJson.Importer(os.path.join(args.baseDirectory, 'val
                                            numberOfAttributes=trainImporter.NumberOfAttributes())
 # Create a weights vector for false negatives
 attributesFrequencies = trainImporter.AttributesFrequencies()
+attributesInverseFrequencies = trainImporter.AttributesInverseFrequencies(100.0)
+
 penaltiesForFalseNegativesVector = torch.FloatTensor(len(attributesFrequencies))
 for frequencyNdx in range(len(attributesFrequencies)):
     if attributesFrequencies[frequencyNdx] <= 1e-3:
@@ -116,6 +118,9 @@ elif args.lossFunction == 'AsymmetricL1Loss':
 elif args.lossFunction == 'AsymmetricL2Loss':
     lossFunction = asymmetricLoss.AsymmetricL2Loss(penaltiesForFalseNegativesVector)
     lossRequiresFloatForLabelsTensor = True
+elif args.lossFunction == 'MSELoss':
+    lossFunction = torch.nn.MSELoss()
+    lossRequiresFloatForLabelsTensor = True
 else:
     raise NotImplementedError("trainer.py Loss funtion '{}' is not implemented".format(args.lossFunction))
 
@@ -126,12 +131,17 @@ minibatchIndicesListList = trainImporter.MinibatchIndices(args.minibatchSize)
 # Initial validation loss before training
 validationIndicesList = validationImporter.MinibatchIndices(args.numberOfImagesForValidation)[0] # Keep the first list
 validationImgsTensor, validationLabelsTensor = validationImporter.Minibatch(validationIndicesList, imageSize)
+
 if args.cuda:
     validationImgsTensor = validationImgsTensor.cuda()
     validationLabelsTensor = validationLabelsTensor.cuda()
 
 if lossRequiresFloatForLabelsTensor:
     validationLabelsTensor = validationLabelsTensor.float()
+
+attributesInverseFrequenciesTensor = torch.FloatTensor(attributesInverseFrequencies).repeat(
+    validationLabelsTensor.shape[0], 1)
+validationLabelsTensor = attributesInverseFrequenciesTensor * validationLabelsTensor
 
 # Validation loss
 validationImgsTensor = torch.autograd.Variable(validationImgsTensor)
@@ -160,6 +170,11 @@ for epoch in range(1, args.numberOfEpochs + 1):
 
         if lossRequiresFloatForLabelsTensor:
             minibatchTargetLabelsTensor = minibatchTargetLabelsTensor.float()
+
+        attributesInverseFrequenciesTensor = torch.FloatTensor(attributesInverseFrequencies).repeat( \
+            minibatchTargetLabelsTensor.shape[0], 1)
+        minibatchTargetLabelsTensor = attributesInverseFrequenciesTensor * minibatchTargetLabelsTensor
+
         # Wrap in Variable
         minibatchImgsTensor = torch.autograd.Variable(minibatchImgsTensor)
         minibatchTargetLabelsTensor = torch.autograd.Variable(minibatchTargetLabelsTensor)
@@ -194,6 +209,10 @@ for epoch in range(1, args.numberOfEpochs + 1):
     validationImgsTensor, validationLabelsTensor = validationImporter.Minibatch(validationIndicesList, imageSize)
     if lossRequiresFloatForLabelsTensor:
         validationLabelsTensor = validationLabelsTensor.float()
+
+    attributesInverseFrequenciesTensor = torch.FloatTensor(attributesInverseFrequencies).repeat( \
+        validationLabelsTensor.shape[0], 1)
+    validationLabelsTensor = attributesInverseFrequenciesTensor * validationLabelsTensor
 
     if args.cuda:
         validationImgsTensor = validationImgsTensor.cuda()

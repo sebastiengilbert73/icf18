@@ -10,7 +10,7 @@ def EscapeAndOverkillRates(minibatchOutputVariable, minibatchTargetLabelsVariabl
     for sampleNdx in range(numberOfSamples):
         for attributeNdx in range(numberOfAttributes):
             predictionIsPositive = minibatchOutputVariable.data[sampleNdx, attributeNdx] > 0.5
-            targetIsPositive = minibatchTargetLabelsVariable.data[sampleNdx, attributeNdx] == 1
+            targetIsPositive = minibatchTargetLabelsVariable.data[sampleNdx, attributeNdx] > 0
             if targetIsPositive:
                 numberOfLabelsToFind += 1
             if predictionIsPositive and not targetIsPositive:
