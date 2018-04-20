@@ -23,7 +23,7 @@ parser.add_argument('--numberOfEpochs', help='Number of epochs (Default: 200)', 
 parser.add_argument('--minibatchSize', help='Minibatch size (Default: 64)', type=int, default=64)
 parser.add_argument('--numberOfImagesForValidation', help='The number of images used for validation (Default: 128)', type=int, default=128)
 parser.add_argument('--maximumNumberOfTrainingImages', help='The maximum number of training images (Default: 0, which means no limit)', type=int, default=0)
-parser.add_argument('--maximumPenaltyForFalseNegative', help='Maximum penalty for false negative (Default: 1000)', type=float, default=1000.0)
+parser.add_argument('--maximumPenaltyForFalseNegative', help='Maximum penalty for false negative (Default: 0)', type=float, default=0.0)
 
 args = parser.parse_args()
 args.cuda = not args.disable_cuda and torch.cuda.is_available()
@@ -39,12 +39,15 @@ attributesInverseFrequencies = trainImporter.AttributesInverseFrequencies(100.0)
 
 penaltiesForFalseNegativesVector = torch.FloatTensor(len(attributesFrequencies))
 for frequencyNdx in range(len(attributesFrequencies)):
-    if attributesFrequencies[frequencyNdx] <= 1e-3:
-        penaltiesForFalseNegativesVector[frequencyNdx] = (1 - 1e-3)/1e-3
+    if args.maximumPenaltyForFalseNegative <= 0:
+        penaltiesForFalseNegativesVector[frequencyNdx] = 1.0
     else:
-        penaltiesForFalseNegativesVector[frequencyNdx] = (1.0 - attributesFrequencies[frequencyNdx])/attributesFrequencies[frequencyNdx]
-    if penaltiesForFalseNegativesVector[frequencyNdx] > args.maximumPenaltyForFalseNegative:
-        penaltiesForFalseNegativesVector[frequencyNdx] = args.maximumPenaltyForFalseNegative
+        if attributesFrequencies[frequencyNdx] <= 1e-3:
+            penaltiesForFalseNegativesVector[frequencyNdx] = (1 - 1e-3)/1e-3
+        else:
+            penaltiesForFalseNegativesVector[frequencyNdx] = (1.0 - attributesFrequencies[frequencyNdx])/attributesFrequencies[frequencyNdx]
+        if penaltiesForFalseNegativesVector[frequencyNdx] > args.maximumPenaltyForFalseNegative:
+            penaltiesForFalseNegativesVector[frequencyNdx] = args.maximumPenaltyForFalseNegative
     print ("(LabelID, frequency, penalty): ({}, {}, {})".format(frequencyNdx + 1, attributesFrequencies[frequencyNdx], penaltiesForFalseNegativesVector[frequencyNdx]))
 numberOfAttributes = trainImporter.NumberOfAttributes()
 
