@@ -132,6 +132,10 @@ minibatchIndicesListList = trainImporter.MinibatchIndices(args.minibatchSize)
 validationIndicesList = validationImporter.MinibatchIndices(args.numberOfImagesForValidation)[0] # Keep the first list
 validationImgsTensor, validationLabelsTensor = validationImporter.Minibatch(validationIndicesList, imageSize)
 
+attributesInverseFrequenciesTensor = torch.FloatTensor(attributesInverseFrequencies).repeat(
+    validationLabelsTensor.shape[0], 1)
+validationLabelsTensor = attributesInverseFrequenciesTensor * validationLabelsTensor
+
 if args.cuda:
     validationImgsTensor = validationImgsTensor.cuda()
     validationLabelsTensor = validationLabelsTensor.cuda()
@@ -139,9 +143,7 @@ if args.cuda:
 if lossRequiresFloatForLabelsTensor:
     validationLabelsTensor = validationLabelsTensor.float()
 
-attributesInverseFrequenciesTensor = torch.FloatTensor(attributesInverseFrequencies).repeat(
-    validationLabelsTensor.shape[0], 1)
-validationLabelsTensor = attributesInverseFrequenciesTensor * validationLabelsTensor
+
 
 # Validation loss
 validationImgsTensor = torch.autograd.Variable(validationImgsTensor)
