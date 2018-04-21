@@ -35,7 +35,7 @@ validationImporter = loadFromJson.Importer(os.path.join(args.baseDirectory, 'val
                                            numberOfAttributes=trainImporter.NumberOfAttributes())
 # Create a weights vector for false negatives
 attributesFrequencies = trainImporter.AttributesFrequencies()
-attributesInverseFrequencies = trainImporter.AttributesInverseFrequencies(100.0)
+attributesInverseFrequencies = trainImporter.AttributesInverseFrequencies(trainImporter.NumberOfSamples())
 
 penaltiesForFalseNegativesVector = torch.FloatTensor(len(attributesFrequencies))
 for frequencyNdx in range(len(attributesFrequencies)):
@@ -48,7 +48,7 @@ for frequencyNdx in range(len(attributesFrequencies)):
             penaltiesForFalseNegativesVector[frequencyNdx] = (1.0 - attributesFrequencies[frequencyNdx])/attributesFrequencies[frequencyNdx]
         if penaltiesForFalseNegativesVector[frequencyNdx] > args.maximumPenaltyForFalseNegative:
             penaltiesForFalseNegativesVector[frequencyNdx] = args.maximumPenaltyForFalseNegative
-    print ("(LabelID, frequency, penalty): ({}, {}, {})".format(frequencyNdx + 1, attributesFrequencies[frequencyNdx], penaltiesForFalseNegativesVector[frequencyNdx]))
+    #print ("(LabelID, frequency, penalty): ({}, {}, {})".format(frequencyNdx + 1, attributesFrequencies[frequencyNdx], penaltiesForFalseNegativesVector[frequencyNdx]))
 numberOfAttributes = trainImporter.NumberOfAttributes()
 
 # Create a neural network, an optimizer and a loss function
@@ -140,6 +140,8 @@ if lossRequiresFloatForLabelsTensor:
 attributesInverseFrequenciesTensor = torch.FloatTensor(attributesInverseFrequencies).repeat(
     validationLabelsTensor.shape[0], 1)
 validationLabelsTensor = attributesInverseFrequenciesTensor * validationLabelsTensor
+torch.set_printoptions(threshold=10000)
+print ("validationLabelsTensor =", validationLabelsTensor)
 
 if args.cuda:
     validationImgsTensor = validationImgsTensor.cuda()
@@ -177,8 +179,6 @@ for epoch in range(1, args.numberOfEpochs + 1):
         if lossRequiresFloatForLabelsTensor:
             minibatchTargetLabelsTensor = minibatchTargetLabelsTensor.float()
 
-        attributesInverseFrequenciesTensor = torch.FloatTensor(attributesInverseFrequencies).repeat( \
-            minibatchTargetLabelsTensor.shape[0], 1)
         minibatchTargetLabelsTensor = attributesInverseFrequenciesTensor * minibatchTargetLabelsTensor
 
         # Wrap in Variable
