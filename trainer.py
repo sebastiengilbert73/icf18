@@ -178,7 +178,8 @@ for epoch in range(1, args.numberOfEpochs + 1):
 
         if lossRequiresFloatForLabelsTensor:
             minibatchTargetLabelsTensor = minibatchTargetLabelsTensor.float()
-
+        attributesInverseFrequenciesTensor = torch.FloatTensor(attributesInverseFrequencies).repeat(
+            minibatchTargetLabelsTensor.shape[0], 1)
         minibatchTargetLabelsTensor = attributesInverseFrequenciesTensor * minibatchTargetLabelsTensor
 
         # Wrap in Variable
