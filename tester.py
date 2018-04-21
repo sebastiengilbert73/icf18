@@ -78,7 +78,7 @@ for imageNdx in range(numberOfImages):
     # List the labels: outputVariable.data.shape = torch.Size([1, 228])
     labelsList = []
     for labelNdx in range(testImporter.NumberOfAttributes()):
-        if outputVariable.data[0, labelNdx] >= 0.5:
+        if outputVariable.data[0, labelNdx] >= 1.0:
             labelsList.append(labelNdx + 1) # labels are 1-based
     print ("labelsList =", labelsList)
     submissionLine = str(imageNdx + 1) + ','
